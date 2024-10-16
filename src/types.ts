@@ -4,17 +4,9 @@ export type State = {
     country: string;
     participantsNum: number;
     participantName: string;
-    presaleRate: string;
     startTime: Date;
     endTime: Date;
-    cliff: string;
     participantImages: string;
-    tge: string;
-    frequency: string;
-    presaleToken: number;
-    liquidityToken: number;
-    liquidityPercent: string;
-    vesting: boolean;
   };
 };
 

@@ -7,11 +7,7 @@ import useStore from "@/useStore";
 import { State } from "@/types";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import {
-  useAccount,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from "wagmi";
+import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { plombContract } from "@/constant";
 import { abi } from "@/abi";
 import toast from "react-hot-toast";
@@ -20,7 +16,6 @@ const Admin = () => {
   const updateVoteInfo = useStore((state: any) => state.updateVoteInfo);
   const voteinfo = useStore((State: any) => State.voteinfo);
 
-  const { address } = useAccount();
   // const [ipfsHash, setIpfsHash] = useState<string>("");
 
   console.log(voteinfo);
@@ -61,6 +56,7 @@ const Admin = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     toast.loading("Submitting vote...", { id: "voteSubmission" });
 
     try {
@@ -74,6 +70,12 @@ const Admin = () => {
           voteinfo.startTime,
           voteinfo.endTime,
           [voteinfo.participantName, voteinfo.participantImages],
+          // voteinfo.candidates.map((candidate: any) => [
+          //   candidate.name,
+          //   candidate.ipfsHash,
+          // ]),
+          voteinfo.votes,
+          console.log(voteinfo.participantName, voteinfo.participantImages),
         ],
       });
     } catch (error) {
@@ -217,7 +219,7 @@ const Admin = () => {
                   handleChange(e); // Update the voteinfo state on change
                 }}
               >
-                <option value="---">---</option>
+                <option value="---">-- Choose country --</option>
                 <option value="Nigeria">Nigeria</option>
                 <option value="United States">United States</option>
                 <option value="Canada">Canada</option>
@@ -252,8 +254,8 @@ const Admin = () => {
                   return (
                     <DatePicker
                       selected={value}
-                      // onChange={onChange}
-                      onChange={(date) => onChange(date)}
+                      onChange={onChange}
+                      // onChange={(date) => onChange(date)}
                       customInput={<DateInput />}
                       placeholderText="XX - XX - XXXX - 00:00"
                       clearButtonClassName="w-10 h-8"

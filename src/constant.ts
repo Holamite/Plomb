@@ -1,6 +1,6 @@
 import { abi } from "./abi";
 export const plombContract: `0x${string}` =
-  "0xdd31395f609a6469a731a804201ed7583fdbe77d";
+  "0x436b06ea652e9F5Bf10618DFe6d2F8bffD4a5C87";
 
 export const plombSetup = {
   address: plombContract,

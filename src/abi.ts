@@ -94,48 +94,6 @@ export const abi = [
   },
   {
     type: "function",
-    name: "delegateVote",
-    inputs: [
-      {
-        name: "electionId",
-        type: "uint256",
-        internalType: "uint256",
-      },
-      {
-        name: "candidateName",
-        type: "string",
-        internalType: "string",
-      },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "delegates",
-    inputs: [
-      {
-        name: "",
-        type: "uint256",
-        internalType: "uint256",
-      },
-      {
-        name: "",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
     name: "electionCount",
     inputs: [],
     outputs: [
@@ -182,6 +140,56 @@ export const abi = [
         name: "exists",
         type: "bool",
         internalType: "bool",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getAllElections",
+    inputs: [],
+    outputs: [
+      {
+        name: "pollTitles",
+        type: "string[]",
+        internalType: "string[]",
+      },
+      {
+        name: "countries",
+        type: "string[]",
+        internalType: "string[]",
+      },
+      {
+        name: "startTimes",
+        type: "uint256[]",
+        internalType: "uint256[]",
+      },
+      {
+        name: "endTimes",
+        type: "uint256[]",
+        internalType: "uint256[]",
+      },
+      {
+        name: "allCandidates",
+        type: "tuple[][]",
+        internalType: "struct Voting.Candidate[][]",
+        components: [
+          {
+            name: "name",
+            type: "string",
+            internalType: "string",
+          },
+          {
+            name: "ipfsHash",
+            type: "string",
+            internalType: "string",
+          },
+        ],
+      },
+      {
+        name: "allVotes",
+        type: "uint256[][]",
+        internalType: "uint256[][]",
       },
     ],
     stateMutability: "view",
@@ -477,31 +485,6 @@ export const abi = [
       },
     ],
     stateMutability: "view",
-  },
-  {
-    type: "event",
-    name: "Delegated",
-    inputs: [
-      {
-        name: "electionId",
-        type: "uint256",
-        indexed: true,
-        internalType: "uint256",
-      },
-      {
-        name: "delegator",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-      {
-        name: "delegatee",
-        type: "address",
-        indexed: true,
-        internalType: "address",
-      },
-    ],
-    anonymous: false,
   },
   {
     type: "event",
