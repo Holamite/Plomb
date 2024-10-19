@@ -8,6 +8,8 @@ const useStore = create((set) => ({
     participantsNum: 0,
     participantImages: "",
     participantName: "",
+    candidates: [],
+    votes: [],
     startTime: new Date(),
     endTime: new Date(),
   },

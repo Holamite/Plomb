@@ -3,6 +3,5 @@
   "/page": "app/page.js",
   "/polls/page": "app/polls/page.js",
   "/results/page": "app/results/page.js",
-  "/vote/page": "app/vote/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js"
+  "/vote/page": "app/vote/page.js"
 }

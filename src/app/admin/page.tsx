@@ -47,6 +47,12 @@ const Admin = () => {
     return currentDate.getTime() < selectedDate.getTime();
   };
 
+  const filterEndTime = (time: Date) => {
+    const startTime = getValues("startTime"); // Get the selected start time from the form
+    const selectedDate = new Date(time); // Convert selected time to Date object
+    return startTime && selectedDate.getTime() > new Date(startTime).getTime(); // Ensure end time is after start time
+  };
+
   const {
     register,
     formState: { errors },
@@ -69,12 +75,12 @@ const Admin = () => {
           voteinfo.country,
           voteinfo.startTime,
           voteinfo.endTime,
-          [voteinfo.participantName, voteinfo.participantImages],
-          // voteinfo.candidates.map((candidate: any) => [
-          //   candidate.name,
-          //   candidate.ipfsHash,
-          // ]),
-          voteinfo.votes,
+          // [voteinfo.participantName, voteinfo.participantImages],
+          voteinfo.candidates.map((candidate: any) => [
+            candidate.name,
+            candidate.ipfsHash,
+          ]),
+          // voteinfo.votes,
           console.log(voteinfo.participantName, voteinfo.participantImages),
         ],
       });
@@ -136,12 +142,26 @@ const Admin = () => {
     }
   };
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    updateVoteInfo({
-      ...voteinfo,
-      [name]: value, // Update specific field dynamically
-    });
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement> | Date | null,
+    name?: string
+  ) => {
+    if (e instanceof Date) {
+      // If it's a date, update the respective field (e.g., startTime or endTime)
+      if (name) {
+        updateVoteInfo({
+          ...voteinfo,
+          [name]: Math.floor(e.getTime() / 1000), // Convert date to Unix timestamp
+        });
+      }
+    } else if (e && "target" in e) {
+      // For regular input fields (text, number, etc.)
+      const { name, value } = e.target;
+      updateVoteInfo({
+        ...voteinfo,
+        [name]: value, // Update specific field dynamically
+      });
+    }
   };
 
   return (
@@ -254,7 +274,10 @@ const Admin = () => {
                   return (
                     <DatePicker
                       selected={value}
-                      onChange={onChange}
+                      onChange={(date) => {
+                        onChange(date); // Call Controller's onChange for form state
+                        handleChange(date, "startTime");
+                      }}
                       // onChange={(date) => onChange(date)}
                       customInput={<DateInput />}
                       placeholderText="XX - XX - XXXX - 00:00"
@@ -263,6 +286,7 @@ const Admin = () => {
                       showTimeSelect
                       dateFormat="MMMM d, yyyy h:mm aa"
                       filterTime={filterPassedTime}
+                      minDate={new Date()}
                     />
                   );
                 }}
@@ -293,7 +317,10 @@ const Admin = () => {
                   return (
                     <DatePicker
                       selected={value}
-                      onChange={onChange}
+                      onChange={(date: Date | null) => {
+                        onChange(date);
+                        handleChange(date, "endTime");
+                      }}
                       customInput={<DateInput />}
                       placeholderText="XX - XX - XXXX - 00:00"
                       clearButtonClassName="w-10 h-8"
@@ -301,6 +328,11 @@ const Admin = () => {
                       showTimeSelect
                       dateFormat="MMMM d, yyyy h:mm aa"
                       filterTime={filterPassedTime}
+                      minDate={
+                        getValues("startTime")
+                          ? new Date(getValues("startTime"))
+                          : new Date()
+                      }
                     />
                   );
                 }}
