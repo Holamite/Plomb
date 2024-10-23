@@ -1,5 +1,5 @@
 "use client";
-import { Controller, SubmitHandler, useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { CalendarIcon } from "@heroicons/react/20/solid";
 import { ChangeEvent, forwardRef, useEffect, useState } from "react";
 import { ErrorHandler } from "./utils";
@@ -11,14 +11,12 @@ import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { plombContract } from "@/constant";
 import { abi } from "@/abi";
 import toast from "react-hot-toast";
+// import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const Admin = () => {
   const updateVoteInfo = useStore((state: any) => state.updateVoteInfo);
-  const voteinfo = useStore((State: any) => State.voteinfo);
-
-  // const [ipfsHash, setIpfsHash] = useState<string>("");
-
-  console.log(voteinfo);
+  const voteinfo = useStore((state: any) => state.voteinfo);
+  const [currentParticipant, setCurrentParticipant] = useState(0);
 
   const { writeContract, data: hash } = useWriteContract();
   const { isLoading, isSuccess } = useWaitForTransactionReceipt({
@@ -26,7 +24,6 @@ const Admin = () => {
   });
 
   const DateInput = forwardRef((props: any, ref) => (
-    // <InputDecorator>
     <div className="relative w-full">
       <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-6 h-6" />
       <input
@@ -43,15 +40,10 @@ const Admin = () => {
   const filterPassedTime = (time: any) => {
     const currentDate = new Date();
     const selectedDate = new Date(time);
-
     return currentDate.getTime() < selectedDate.getTime();
   };
 
-  const filterEndTime = (time: Date) => {
-    const startTime = getValues("startTime"); // Get the selected start time from the form
-    const selectedDate = new Date(time); // Convert selected time to Date object
-    return startTime && selectedDate.getTime() > new Date(startTime).getTime(); // Ensure end time is after start time
-  };
+  console.log(voteinfo);
 
   const {
     register,
@@ -62,11 +54,9 @@ const Admin = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     toast.loading("Submitting vote...", { id: "voteSubmission" });
-
     try {
-      await writeContract({
+      writeContract({
         address: plombContract,
         abi,
         functionName: "createElection",
@@ -75,13 +65,11 @@ const Admin = () => {
           voteinfo.country,
           voteinfo.startTime,
           voteinfo.endTime,
-          // [voteinfo.participantName, voteinfo.participantImages],
           voteinfo.candidates.map((candidate: any) => [
             candidate.name,
-            candidate.ipfsHash,
+            candidate.image,
           ]),
-          // voteinfo.votes,
-          console.log(voteinfo.participantName, voteinfo.participantImages),
+          voteinfo.votes,
         ],
       });
     } catch (error) {
@@ -134,10 +122,15 @@ const Admin = () => {
 
       const resData = await res.json();
 
-      updateVoteInfo({ ...voteinfo, participantImages: resData.IpfsHash });
-      console.log(resData.IpfsHash);
+      updateVoteInfo({
+        ...voteinfo,
+        candidates: voteinfo.candidates.map((candidate: any, index: number) =>
+          index === currentParticipant
+            ? { ...candidate, image: resData.IpfsHash }
+            : candidate
+        ),
+      });
     } catch (e) {
-      // console.log(e);
       alert("Trouble uploading file");
     }
   };
@@ -147,21 +140,55 @@ const Admin = () => {
     name?: string
   ) => {
     if (e instanceof Date) {
-      // If it's a date, update the respective field (e.g., startTime or endTime)
       if (name) {
         updateVoteInfo({
           ...voteinfo,
-          [name]: Math.floor(e.getTime() / 1000), // Convert date to Unix timestamp
+          [name]: Math.floor(e.getTime() / 1000),
         });
       }
     } else if (e && "target" in e) {
-      // For regular input fields (text, number, etc.)
       const { name, value } = e.target;
-      updateVoteInfo({
-        ...voteinfo,
-        [name]: value, // Update specific field dynamically
-      });
+
+      if (name === "participantsNum") {
+        let num = parseInt(value);
+        // Ensure `num` is a valid number, non-negative, and greater than 0
+        if (isNaN(num) || num < 0) {
+          num = 0;
+        }
+
+        updateVoteInfo({
+          ...voteinfo,
+          [name]: num,
+          candidates: Array(num)
+            .fill({ name: "", image: "" }) // Fill array with default objects
+            .map((candidate, i) => voteinfo.candidates[i] || candidate),
+        });
+      } else if (name === "participantName") {
+        updateVoteInfo({
+          ...voteinfo,
+          candidates: voteinfo.candidates.map((candidate: any, index: number) =>
+            index === currentParticipant
+              ? { ...candidate, name: value }
+              : candidate
+          ),
+        });
+      } else {
+        updateVoteInfo({
+          ...voteinfo,
+          [name]: value,
+        });
+      }
     }
+  };
+
+  const nextParticipant = () => {
+    setCurrentParticipant((prev) =>
+      Math.min(prev + 1, voteinfo.participantsNum - 1)
+    );
+  };
+
+  const prevParticipant = () => {
+    setCurrentParticipant((prev) => Math.max(prev - 1, 0));
   };
 
   return (
@@ -181,7 +208,6 @@ const Admin = () => {
               <input
                 {...register("pollTitle", {
                   required: true,
-                  pattern: /^\d+(\.\d+)?$/,
                 })}
                 className="bg-[#333333] px-5 focus:border-[#00ACE3] focus:border-2 border-0 outline-none bg-hero w-full placeholder:text-neutral-500 py-4 rounded-3xl"
                 placeholder="Enter your poll title "
@@ -191,7 +217,7 @@ const Admin = () => {
             </div>
             <ErrorHandler
               error={errors.pollTitle?.type}
-              patternMessage="Number input is required"
+              patternMessage="Poll title is required"
               message={errors.pollTitle?.message}
             />
           </div>
@@ -206,7 +232,7 @@ const Admin = () => {
                 <input
                   {...register("participantsNum", {
                     required: true,
-                    pattern: /^\d+(\.\d+)?$/,
+                    pattern: /^\d+$/,
                     min: 1,
                   })}
                   className="bg-[#333333] px-5 focus:border-[#00ACE3] focus:border-2 border-0 outline-none bg-hero w-full placeholder:text-neutral-500 py-4 rounded-3xl"
@@ -228,15 +254,13 @@ const Admin = () => {
               </label>
               <select
                 id="country"
-                defaultValue={
-                  voteinfo?.country || "---"
-                } /* Ensure default value is set safely */
+                defaultValue={voteinfo?.country || "---"}
                 className="bg-[#333333] px-5 focus:border-[#00ACE3] focus:border-2 border-0 outline-none bg-hero w-full placeholder:text-neutral-500 py-4 rounded-3xl"
                 {...register("country", {
                   required: "Country selection is required",
-                })} // Register for validation
+                })}
                 onChange={(e: any) => {
-                  handleChange(e); // Update the voteinfo state on change
+                  handleChange(e);
                 }}
               >
                 <option value="---">-- Choose country --</option>
@@ -275,10 +299,9 @@ const Admin = () => {
                     <DatePicker
                       selected={value}
                       onChange={(date) => {
-                        onChange(date); // Call Controller's onChange for form state
+                        onChange(date);
                         handleChange(date, "startTime");
                       }}
-                      // onChange={(date) => onChange(date)}
                       customInput={<DateInput />}
                       placeholderText="XX - XX - XXXX - 00:00"
                       clearButtonClassName="w-10 h-8"
@@ -328,11 +351,7 @@ const Admin = () => {
                       showTimeSelect
                       dateFormat="MMMM d, yyyy h:mm aa"
                       filterTime={filterPassedTime}
-                      minDate={
-                        getValues("startTime")
-                          ? new Date(getValues("startTime"))
-                          : new Date()
-                      }
+                      minDate={getValues("startTime") || new Date()}
                     />
                   );
                 }}
@@ -348,81 +367,103 @@ const Admin = () => {
             Register Participants
           </h3>
 
-          <div className="flex gap-6">
-            <button className="left-btn text-3xl text-[#00ACE3]  md:w-[5%] md:-ml-20  md:mr-4 ">
-              &lt;
-            </button>
-
-            <div className="flex justify-between md:w-[100%] mx-4 md:mx-0 gap-12">
-              <div className="flex flex-col self-center gap-3 lg:gap-5 basis-1/2">
-                <label className="lg:text-xl mb-2">
-                  Name of Participants<span className="text-red-400">*</span>
-                </label>
-                <div>
-                  <input
-                    {...register("participantName", {
-                      required: true,
-                      pattern: /^\d+(\.\d+)?$/,
-                    })}
-                    className="bg-[#333333] px-5 focus:border-[#00ACE3] focus:border-2 border-0 outline-none bg-hero w-full placeholder:text-neutral-500 py-4 rounded-3xl"
-                    placeholder="Enter Name of Participant"
-                    defaultValue={voteinfo.participants}
-                    onChange={handleChange}
-                  />
-                </div>
-                <ErrorHandler
-                  error={errors.participantName?.type}
-                  patternMessage="Number input is required"
-                  message={errors.participantName?.message}
-                />
+          {voteinfo.participantsNum > 0 && (
+            <div className="flex flex-col items-center gap-6">
+              <div className="flex justify-between items-center w-full">
+                <button
+                  type="button"
+                  onClick={prevParticipant}
+                  disabled={currentParticipant === 0}
+                  className="text-3xl text-[#00ACE3] disabled:opacity-50"
+                  aria-label="Previous participant"
+                >
+                  ==={/* <ChevronLeft className="h-8 w-8" /> */}
+                </button>
+                <span className="text-xl">
+                  Participant {currentParticipant + 1} of{" "}
+                  {voteinfo.participantsNum}
+                </span>
+                <button
+                  type="button"
+                  onClick={nextParticipant}
+                  disabled={currentParticipant === voteinfo.participantsNum - 1}
+                  className="text-3xl text-[#00ACE3] disabled:opacity-50"
+                  aria-label="Next participant"
+                >
+                  &gt; {/* <ChevronRight className="h-8 w-8" /> */}
+                </button>
               </div>
 
-              {/* Participants Image */}
-              <div>
-                {voteinfo.participantImages !== "" && (
-                  <img
-                    src={`https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${voteinfo.participantImages}`}
-                    alt="image"
-                    className="w-[300px] h-[300px] object-fit"
-                  />
-                )}
-                <label className="mb-2" htmlFor="image">
-                  Upload Participant Images
-                  <div className="flex cursor-pointer flex-col justify-center items-center bg-[#333333] md:px-12 md:py-6 rounded-md">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={3}
-                      stroke="currentColor"
-                      className="size-8 mb-2 text-[#00ACE3]"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
-                      />
-                    </svg>
+              <div className="flex justify-between w-full gap-12">
+                <div className="flex flex-col  self-center gap-3 lg:gap-5 basis-1/2">
+                  <label className="lg:text-xl mb-2">
+                    Name of Participant<span className="text-red-400">*</span>
+                  </label>
+                  <div>
+                    <input
+                      {...register(`candidates.${currentParticipant}.name`, {
+                        required: true,
+                      })}
+                      className="bg-[#333333] px-5 focus:border-[#00ACE3] focus:border-2 border-0 outline-none bg-hero w-full placeholder:text-neutral-500 py-4 rounded-3xl"
+                      placeholder="Enter Name of Participant"
+                      defaultValue={
+                        voteinfo.candidates[currentParticipant]?.name || ""
+                      }
+                      onChange={handleChange}
+                      name="participantName"
+                    />
                   </div>
-                </label>
-                <div>
+                  <ErrorHandler
+                    error={errors.candidates?.[currentParticipant]?.name?.type}
+                    patternMessage="Participant name is required"
+                    message={
+                      errors.candidates?.[currentParticipant]?.name?.message
+                    }
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 basis-1/2">
+                  {voteinfo.candidates[currentParticipant]?.image && (
+                    <img
+                      src={`https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${voteinfo.candidates[currentParticipant].image}`}
+                      alt={`Participant ${currentParticipant + 1}`}
+                      className="w-[300px] h-[300px] rounded-md"
+                    />
+                  )}
+                  <label className="cursor-pointer" htmlFor="image">
+                    <div className="flex flex-col justify-center items-center bg-[#333333] px-12 py-6 rounded-md">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={3}
+                        stroke="currentColor"
+                        className="size-8 mb-2 text-[#00ACE3]"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
+                        />
+                      </svg>
+                      <span>Upload Participant Image</span>
+                    </div>
+                  </label>
                   <input
                     onChange={changeHandler}
                     id="image"
                     type="file"
-                    accept="image/png, image/jpg, image/webp"
+                    accept="image/png, image/jpg, image/jpeg, image/webp"
                     style={{ display: "none" }}
-                    className="file"
+                    className="file w-[300px] self-center h-[300px] rounded-md"
                   />
-                  <p className="text-[#ACACAC]"></p>
-                  <small>Files Supported: png, jpg, jpeg, webp</small>
+                  <small className="text-[#ACACAC]">
+                    Files Supported: png, jpg, jpeg, webp
+                  </small>
                 </div>
               </div>
             </div>
-            <button className="right-btn text-3xl text-[#00ACE3]  md:w-[5%] md:-mr-20 md:ml-4">
-              &gt;
-            </button>
-          </div>
+          )}
 
           <div className="flex justify-end mt-24 gap-4">
             <button
@@ -431,7 +472,10 @@ const Admin = () => {
             >
               Create Poll
             </button>
-            <button className="bg-[#333333] px-4 py-2 rounded-md font-semibold">
+            <button
+              type="button"
+              className="bg-[#333333] px-4 py-2 rounded-md font-semibold"
+            >
               Cancel
             </button>
           </div>

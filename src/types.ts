@@ -3,9 +3,8 @@ export type State = {
     pollTitle: string;
     country: string;
     participantsNum: number;
-    candidates: Array<string>;
+    candidates: Array<{ name: string }>;
     participantName: string;
-    votes: Array<number>;
     startTime: Date;
     endTime: Date;
     participantImages: string;
