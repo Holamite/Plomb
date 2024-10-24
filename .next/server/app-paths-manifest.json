@@ -1,7 +1,6 @@
 {
-  "/page": "app/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/results/page": "app/results/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/polls/page": "app/polls/page.js",
-  "/vote/page": "app/vote/page.js"
+  "/admin/page": "app/admin/page.js",
+  "/page": "app/page.js"
 }

@@ -22,17 +22,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/polls/page.js"
     ],
-    "/results/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/results/page.css",
-      "static/chunks/app/results/page.js"
-    ],
-    "/vote/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/vote/page.css",
-      "static/chunks/app/vote/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

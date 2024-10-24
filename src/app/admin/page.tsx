@@ -1,5 +1,5 @@
 "use client";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { CalendarIcon } from "@heroicons/react/20/solid";
 import { ChangeEvent, forwardRef, useEffect, useState } from "react";
 import { ErrorHandler } from "./utils";
@@ -47,14 +47,13 @@ const Admin = () => {
 
   const {
     register,
+    handleSubmit,
     formState: { errors },
     getValues,
     control,
   } = useForm<State["voteinfo"]>();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    toast.loading("Submitting vote...", { id: "voteSubmission" });
+  const onSubmit: SubmitHandler<State["voteinfo"]> = async () => {
     try {
       writeContract({
         address: plombContract,
@@ -65,11 +64,7 @@ const Admin = () => {
           voteinfo.country,
           voteinfo.startTime,
           voteinfo.endTime,
-          voteinfo.candidates.map((candidate: any) => [
-            candidate.name,
-            candidate.image,
-          ]),
-          voteinfo.votes,
+          voteinfo.candidates,
         ],
       });
     } catch (error) {
@@ -126,7 +121,7 @@ const Admin = () => {
         ...voteinfo,
         candidates: voteinfo.candidates.map((candidate: any, index: number) =>
           index === currentParticipant
-            ? { ...candidate, image: resData.IpfsHash }
+            ? { ...candidate, ipfsHash: resData.IpfsHash }
             : candidate
         ),
       });
@@ -160,7 +155,7 @@ const Admin = () => {
           ...voteinfo,
           [name]: num,
           candidates: Array(num)
-            .fill({ name: "", image: "" }) // Fill array with default objects
+            .fill({ name: "", ipfsHash: "" }) // Fill array with default objects
             .map((candidate, i) => voteinfo.candidates[i] || candidate),
         });
       } else if (name === "participantName") {
@@ -198,7 +193,8 @@ const Admin = () => {
           Admin Dashboard
         </h1>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {/* <form onSubmit={handleSubmit}  > */}
           {/* Row 1 */}
           <div className="flex flex-col gap-3 lg:gap-5 basis-1/2">
             <label className="lg:text-xl mb-2">
@@ -406,7 +402,7 @@ const Admin = () => {
                       })}
                       className="bg-[#333333] px-5 focus:border-[#00ACE3] focus:border-2 border-0 outline-none bg-hero w-full placeholder:text-neutral-500 py-4 rounded-3xl"
                       placeholder="Enter Name of Participant"
-                      defaultValue={
+                      value={
                         voteinfo.candidates[currentParticipant]?.name || ""
                       }
                       onChange={handleChange}
@@ -423,9 +419,9 @@ const Admin = () => {
                 </div>
 
                 <div className="flex flex-col gap-3 basis-1/2">
-                  {voteinfo.candidates[currentParticipant]?.image && (
+                  {voteinfo.candidates[currentParticipant]?.ipfsHash && (
                     <img
-                      src={`https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${voteinfo.candidates[currentParticipant].image}`}
+                      src={`https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/${voteinfo.candidates[currentParticipant].ipfsHash}`}
                       alt={`Participant ${currentParticipant + 1}`}
                       className="w-[300px] h-[300px] rounded-md"
                     />
@@ -467,7 +463,7 @@ const Admin = () => {
 
           <div className="flex justify-end mt-24 gap-4">
             <button
-              type="submit"
+              // type="submit"
               className="bg-[#00ACE3] px-4 py-2 rounded-md font-semibold"
             >
               Create Poll

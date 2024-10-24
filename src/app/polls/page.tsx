@@ -5,6 +5,7 @@ import { useReadContract } from "wagmi";
 import { plombContract } from "@/constant";
 import { abi } from "@/abi";
 import axios from "axios";
+import useStore from "@/useStore";
 
 // Define types for Candidate and ElectionData
 interface Candidate {
@@ -22,7 +23,7 @@ interface ElectionData {
 }
 
 function Polls() {
-  const [result, setResult] = useState<ElectionData | null>(null);
+  const voteinfo = useStore((state: any) => state.voteinfo);
 
   const { data, isLoading } = useReadContract({
     abi,
@@ -30,70 +31,7 @@ function Polls() {
     functionName: "getAllElections",
   });
 
-  useEffect(() => {
-    if (data) {
-      let result: ElectionData | undefined;
-
-      if (data[0].status === "failure") {
-        result = data[1].result;
-      } else {
-        result = data[0].result;
-      }
-    }
-
-    const prepareUrl = (uri: string) => {
-      return uri.replace(
-        /^ipfs:\/\//,
-        `https://${process.env.NEXT_PUBLIC_GATEWAY_URL}/ipfs/`
-      );
-    };
-
-    const fetchIPFS = async (candidate: Candidate) => {
-      const url = prepareUrl(candidate.ipfsHash);
-      try {
-        const { data: metadata } = await axios.get(url);
-        const logo = prepareUrl(metadata.image);
-
-        // Create a candidate object with the metadata and logo
-        return {
-          ...candidate,
-          logo,
-        };
-      } catch (e) {
-        console.error(e);
-        return candidate; // Return the original candidate if the IPFS fetch fails
-      }
-    };
-    // Fetch and format election data
-    const processElectionData = async (data: ElectionData) => {
-      const { pollTitle, country, startTime, endTime, candidates, votes } =
-        data;
-
-      // Fetch IPFS data for all candidates concurrently
-      const updatedCandidates = await Promise.all(
-        candidates.map((candidate) => fetchIPFS(candidate))
-      );
-
-      // Prepare the final result object
-      const res = {
-        pollTitle,
-        country,
-        startTime,
-        endTime,
-        candidates: updatedCandidates, // Use updated candidates with IPFS metadata
-        votes,
-      };
-      // Update the result state
-      setResult(res);
-    };
-
-    // Process the result if available
-    if (result) {
-      processElectionData(result);
-    }
-  }, [data]);
-
-  console.log(result, data);
+  console.log(data);
 
   const getCurrentTime = Math.floor(new Date().getTime() / 1000);
   return (
@@ -135,7 +73,7 @@ function Polls() {
 
               <div className="flex justify-between">
                 <p className="text-neutral-300">Number of Participant</p>
-                <p className="font-mono">4</p>
+                <p className="font-mono">{voteinfo.participantsNum}</p>
               </div>
 
               <div className="flex justify-between">
