@@ -4,10 +4,9 @@ export type State = {
     country: string;
     participantsNum: number;
     candidates: Array<{ name: string }>;
-    participantName: string;
     startTime: Date;
     endTime: Date;
-    participantImages: string;
+    votes: [];
   };
 };
 

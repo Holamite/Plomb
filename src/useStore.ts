@@ -9,6 +9,7 @@ const useStore = create((set) => ({
     candidates: [],
     startTime: new Date(),
     endTime: new Date(),
+    votes: [],
   },
 
   updateVoteInfo: (data: any) => set({ voteinfo: data }),

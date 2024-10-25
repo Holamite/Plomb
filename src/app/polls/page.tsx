@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useReadContract } from "wagmi";
 import { plombContract } from "@/constant";
 import { abi } from "@/abi";
+import { State } from "@/types";
 import axios from "axios";
 import useStore from "@/useStore";
 
@@ -13,17 +14,8 @@ interface Candidate {
   ipfsHash: string; // IPFS hash for the candidate's image
 }
 
-interface ElectionData {
-  pollTitle: string;
-  country: string;
-  startTime: number;
-  endTime: number;
-  candidates: Candidate[];
-  votes: number[];
-}
-
 function Polls() {
-  const voteinfo = useStore((state: any) => state.voteinfo);
+  const [elections, setElections] = useState<State["voteinfo"]>();
 
   const { data, isLoading } = useReadContract({
     abi,
@@ -31,7 +23,36 @@ function Polls() {
     functionName: "getAllElections",
   });
 
-  console.log(data);
+  useEffect(() => {
+    if (data) {
+      const {
+        pollTitle,
+        country,
+        participantsNum,
+        startTime,
+        endTime,
+        candidates,
+        votes,
+      } = data as State["voteinfo"];
+
+      const election = {
+        pollTitle,
+        country,
+        participantsNum,
+        startTime: startTime,
+        endTime: endTime,
+        candidates: candidates.map((candidate: any) => ({
+          name: candidate.name,
+          ipfsHash: candidate.ipfsHash,
+        })),
+        votes: votes.map((vote: any) => vote) as [],
+      };
+
+      setElections(election);
+    }
+  }, [data, elections]);
+
+  console.log(elections, data);
 
   const getCurrentTime = Math.floor(new Date().getTime() / 1000);
   return (
@@ -73,7 +94,7 @@ function Polls() {
 
               <div className="flex justify-between">
                 <p className="text-neutral-300">Number of Participant</p>
-                <p className="font-mono">{voteinfo.participantsNum}</p>
+                <p className="font-mono">10</p>
               </div>
 
               <div className="flex justify-between">
